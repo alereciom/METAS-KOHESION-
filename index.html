@@ -239,34 +239,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--text);f
 </div><!-- /shell -->
 
 <script>
-const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSI3PaTGpDP64lOqTUHGuVYxhQPUdgj94QjPclyKcRUknzIWbPnN4TsjRnwsFmnUmrG0YbRam63VKI8/pub?output=csv&gid=';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwvaqZq-oLVgVyi8w6VEoiQlCYDLtpobzwEGzbvEIAA0lLrzVGk7rAPQAal1jyJouh-qg/exec';
 
-const MESES = [
-  {nombre:'Enero',   gid:'160595116'},
-  {nombre:'Febrero', gid:'1376352959'},
-  {nombre:'Marzo',   gid:'71200325'},
-  {nombre:'Abril',   gid:'794215396'},
-  {nombre:'Mayo',    gid:'1194201743'},
-  {nombre:'Junio',   gid:'2111051324'},
-  {nombre:'Julio',   gid:'1386326567'},
-  {nombre:'Agosto',  gid:'1518055373'},
-  {nombre:'Septiembre',gid:'1399547941'},
-  {nombre:'Octubre', gid:'1185373029'},
-  {nombre:'Noviembre',gid:'120543123'},
-  {nombre:'Diciembre',gid:'177414756'},
+const MESES=[
+  {nombre:'Enero',gid:'160595116'},{nombre:'Febrero',gid:'1376352959'},
+  {nombre:'Marzo',gid:'71200325'},{nombre:'Abril',gid:'794215396'},
+  {nombre:'Mayo',gid:'1194201743'},{nombre:'Junio',gid:'2111051324'},
+  {nombre:'Julio',gid:'1386326567'},{nombre:'Agosto',gid:'1518055373'},
+  {nombre:'Septiembre',gid:'1399547941'},{nombre:'Octubre',gid:'1185373029'},
+  {nombre:'Noviembre',gid:'120543123'},{nombre:'Diciembre',gid:'177414756'},
 ];
 
-const BIMESTRES = [
+const BIMESTRES=[
   ['Enero','Febrero'],['Marzo','Abril'],['Mayo','Junio'],
   ['Julio','Agosto'],['Septiembre','Octubre'],['Noviembre','Diciembre']
 ];
 
-const cache = {};
-let currentBim = 0;
+const cache={};
+let currentBim=0;
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(n){
-  if(isNaN(n)||n===null) return '—';
+  if(isNaN(n)||n===null||n===undefined) return '—';
   return '$'+Math.round(n).toLocaleString('es-MX');
 }
 function pct(real,meta){return meta>0?Math.round(real/meta*100):0;}
@@ -275,332 +268,232 @@ function bc(p){return p>=100?'#00A08C':p>=75?'#C89000':'#D63C3C';}
 
 function parseMoney(s){
   if(!s) return 0;
-  return parseFloat(s.replace(/[$,\s]/g,'').replace('%',''))||0;
-}
-
-// ── CSV Parser ───────────────────────────────────────────────────────────────
-function parseCSV(text){
-  const rows=[];
-  const lines=text.split('\n');
-  for(const line of lines){
-    const cols=[];let cur='';let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){inQ=!inQ;}
-      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
-      else{cur+=c;}
-    }
-    cols.push(cur.trim());
-    rows.push(cols);
-  }
-  return rows;
+  s=String(s).replace(/[$,\s]/g,'').replace('%','');
+  return parseFloat(s)||0;
 }
 
 function parseSheet(rows){
-  const areas=[];
-  for(let i=4;i<25;i++){
-    const r=rows[i];
+  var areas=[];
+  for(var i=4;i<25;i++){
+    var r=rows[i];
     if(!r||!r[1]||r[1]==='TOTALES') continue;
-    areas.push({
-      nombre:r[1].trim(),
-      meta:parseMoney(r[2]),
-      real:parseMoney(r[3]),
-    });
+    areas.push({nombre:String(r[1]).trim(),meta:parseMoney(r[2]),real:parseMoney(r[3])});
   }
-  const grupos=[];
-  for(let i=4;i<17;i++){
-    const r=rows[i];
+  var grupos=[];
+  for(var i=4;i<17;i++){
+    var r=rows[i];
     if(!r||!r[7]) continue;
-    grupos.push({
-      nombre:r[7].trim(),
-      meta:parseMoney(r[8]),
-      real:parseMoney(r[9]),
-    });
+    grupos.push({nombre:String(r[7]).trim(),meta:parseMoney(r[8]),real:parseMoney(r[9])});
   }
-  const procs=[];
-  for(let i=27;i<47;i++){
-    const r=rows[i];
+  var procs=[];
+  for(var i=27;i<47;i++){
+    var r=rows[i];
     if(!r||!r[11]) continue;
     procs.push({
-      nombre:r[11].trim(),
+      nombre:String(r[11]).trim(),
       restante:parseMoney(r[12]),
       ticket:parseMoney(r[13]),
       faltantes:Math.max(0,parseInt(r[14])||0),
     });
   }
-  // Total
-  const totR=rows[25]||[];
-  const total={meta:parseMoney(totR[2]),real:parseMoney(totR[3])};
-  return{areas,grupos,procs,total};
+  var totR=rows[25]||[];
+  return{areas:areas,grupos:grupos,procs:procs,total:{meta:parseMoney(totR[2]),real:parseMoney(totR[3])}};
 }
 
 async function fetchSheet(gid){
   if(cache[gid]) return cache[gid];
-  const url='https://script.google.com/macros/s/AKfycbwvaqZq-oLVgVyi8w6VEoiQlCYDLtpobzwEGzbvEIAA0lLrzVGk7rAPQAal1jyJouh-qg/exec?gid='+gid;
-  const r=await fetch(url);
+  var url=SCRIPT_URL+'?gid='+gid;
+  var r=await fetch(url);
   if(!r.ok) throw new Error('HTTP '+r.status);
-  const text=await r.text();
-  const rows=parseCSV(text);
-  const data=parseSheet(rows);
+  var rows=await r.json();
+  var data=parseSheet(rows);
   cache[gid]=data;
   return data;
 }
 
-// ── Views ────────────────────────────────────────────────────────────────────
 function showView(v,el){
-  document.querySelectorAll('[id^="view-"]').forEach(x=>x.style.display='none');
+  document.querySelectorAll('[id^="view-"]').forEach(function(x){x.style.display='none';});
   document.getElementById('view-'+v).style.display='block';
-  document.querySelectorAll('.sb-item').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(function(x){x.classList.remove('active');});
   if(el) el.classList.add('active');
   if(v==='bimestre') renderBimestre();
   if(v==='comparativo') renderComparativo();
 }
 
-// ── Bar chart ────────────────────────────────────────────────────────────────
-function renderBars(containerId, items){
-  const el=document.getElementById(containerId);
+function renderBars(containerId,items){
+  var el=document.getElementById(containerId);
   if(!el) return;
   el.innerHTML='';
-  items.forEach(item=>{
-    const p=pct(item.real,item.meta);
-    const c=color(p);
-    const restante=item.meta-item.real;
-    const div=document.createElement('div');
-    div.innerHTML=`
-      <div class="bar-row" onclick="this.nextElementSibling.classList.toggle('open')">
-        <div class="bar-name">
-          <span style="width:7px;height:7px;border-radius:50%;background:${bc(p)};flex-shrink:0;display:inline-block"></span>
-          ${item.nombre}
-        </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(p,100)}%;background:${bc(p)}"></div></div>
-        <div class="bar-pct" style="color:${bc(p)}">${p}%</div>
-      </div>
-      <div class="bar-detail">
-        <strong style="color:${bc(p)}">${fmt(item.real)}</strong>
-        <span> captado &nbsp;·&nbsp; meta ${fmt(item.meta)} &nbsp;·&nbsp; </span>
-        ${restante>0?`<span style="color:var(--red)">falta ${fmt(restante)}</span>`:`<span style="color:var(--teal-dark)">✓ meta superada</span>`}
-      </div>
-    `;
+  items.forEach(function(item){
+    var p=pct(item.real,item.meta);
+    var barColor=bc(p);
+    var restante=item.meta-item.real;
+    var restText=restante>0?'falta <span style="color:#D63C3C">'+fmt(restante)+'</span>':'<span style="color:#007A6B">✓ meta superada</span>';
+    var div=document.createElement('div');
+    div.innerHTML=
+      '<div class="bar-row" onclick="this.nextElementSibling.classList.toggle('open')">'
+      +'<div class="bar-name"><span style="width:7px;height:7px;border-radius:50%;background:'+barColor+';flex-shrink:0;display:inline-block"></span>'+item.nombre+'</div>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.min(p,100)+'%;background:'+barColor+'"></div></div>'
+      +'<div class="bar-pct" style="color:'+barColor+'">'+p+'%</div>'
+      +'</div>'
+      +'<div class="bar-detail">'
+      +'<strong style="color:'+barColor+'">'+fmt(item.real)+'</strong>'
+      +' captado &nbsp;·&nbsp; meta '+fmt(item.meta)+' &nbsp;·&nbsp; '+restText
+      +'</div>';
     el.appendChild(div);
   });
 }
 
-function renderStatus(containerId, areas){
-  const el=document.getElementById(containerId);
+function renderStatus(containerId,areas){
+  var el=document.getElementById(containerId);
   if(!el) return;
-  const verde=areas.filter(a=>pct(a.real,a.meta)>=100);
-  const ambar=areas.filter(a=>{const p=pct(a.real,a.meta);return p>=75&&p<100;});
-  const rojo=areas.filter(a=>pct(a.real,a.meta)<75);
-  el.innerHTML=`
-    <div class="status-section">
-      <div class="status-title green">En o sobre meta (${verde.length})</div>
-      ${verde.length?verde.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
-    </div>
-    <div class="status-section">
-      <div class="status-title amber">Cerca 75-99% (${ambar.length})</div>
-      ${ambar.length?ambar.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
-    </div>
-    <div class="status-section">
-      <div class="status-title red">Necesitan atención (${rojo.length})</div>
-      ${rojo.length?rojo.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
-    </div>
-  `;
+  var verde=areas.filter(function(a){return pct(a.real,a.meta)>=100;});
+  var ambar=areas.filter(function(a){var p=pct(a.real,a.meta);return p>=75&&p<100;});
+  var rojo=areas.filter(function(a){return pct(a.real,a.meta)<75;});
+  function list(arr,col){
+    if(!arr.length) return '<div style="color:#7A9990;font-size:12px">—</div>';
+    return arr.map(function(a){
+      return '<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:'+col+';display:inline-block;margin-right:5px"></span>'+a.nombre+'</div>';
+    }).join('');
+  }
+  el.innerHTML=
+    '<div class="status-section"><div class="status-title green">En o sobre meta ('+verde.length+')</div>'+list(verde,'#00A08C')+'</div>'
+    +'<div class="status-section"><div class="status-title amber">Cerca 75-99% ('+ambar.length+')</div>'+list(ambar,'#C89000')+'</div>'
+    +'<div class="status-section"><div class="status-title red">Necesitan atención ('+rojo.length+')</div>'+list(rojo,'#D63C3C')+'</div>';
 }
 
-function renderProcs(containerId, procs){
-  const el=document.getElementById(containerId);
+function renderProcs(containerId,procs){
+  var el=document.getElementById(containerId);
   if(!el) return;
-  const rows=procs.map(p=>{
-    const done=p.faltantes<=0;
-    return `<tr>
-      <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:${done?'#00A08C':'#7A9990'};display:inline-block"></span>${p.nombre}</span></td>
-      <td style="text-align:right" class="${p.restante>0?'red-text':'green-text'}">${fmt(p.restante)}</td>
-      <td style="text-align:right;color:var(--muted)">${fmt(p.ticket)}</td>
-      <td style="text-align:right">
-        ${done?'<span class="badge green">✓ En meta</span>':`<span class="badge red">${p.faltantes} proc.</span>`}
-      </td>
-    </tr>`;
-  }).join('');
-  el.innerHTML=`<table class="procs-table">
-    <thead><tr>
-      <th>Área</th><th style="text-align:right">Restante</th>
-      <th style="text-align:right">Ticket prom.</th>
-      <th style="text-align:right">Procedimientos</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+  var rows='';
+  procs.forEach(function(p){
+    var done=p.faltantes<=0;
+    var dotColor=done?'#00A08C':'#7A9990';
+    var restColor=p.restante>0?'#D63C3C':'#007A6B';
+    var badge=done?'<span class="badge green">✓ En meta</span>':'<span class="badge red">'+p.faltantes+' proc.</span>';
+    rows+='<tr>'
+      +'<td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:'+dotColor+';display:inline-block"></span>'+p.nombre+'</span></td>'
+      +'<td style="text-align:right;color:'+restColor+'">'+fmt(p.restante)+'</td>'
+      +'<td style="text-align:right;color:#7A9990">'+fmt(p.ticket)+'</td>'
+      +'<td style="text-align:right">'+badge+'</td>'
+      +'</tr>';
+  });
+  el.innerHTML='<table class="procs-table"><thead><tr><th>Área</th><th style="text-align:right">Restante</th><th style="text-align:right">Ticket prom.</th><th style="text-align:right">Procedimientos</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
-// ── Load month ───────────────────────────────────────────────────────────────
 async function loadMonth(){
-  const sel=document.getElementById('mes-select');
-  const gid=sel.value;
-  const mesNombre=sel.options[sel.selectedIndex].text;
-
+  var sel=document.getElementById('mes-select');
+  var gid=sel.value;
+  var mesNombre=sel.options[sel.selectedIndex].text;
   document.getElementById('kpi-grid').innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando '+mesNombre+'...</span></div>';
   document.getElementById('chart-areas').innerHTML='';
   document.getElementById('chart-grupos').innerHTML='';
   document.getElementById('status-panel').innerHTML='';
   document.getElementById('procs-table-wrap').innerHTML='';
-
   document.getElementById('periodo-label').textContent='Período: '+mesNombre+' 2026 — '+new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-
   try{
-    const d=await fetchSheet(gid);
-    const p=pct(d.total.real,d.total.meta);
-    const c=color(p);
-    const enMeta=d.areas.filter(a=>pct(a.real,a.meta)>=100).length;
-
-    document.getElementById('kpi-grid').innerHTML=`
-      <div class="kpi ${c}">
-        <div class="kpi-label">Total captado</div>
-        <div class="kpi-val ${c}">${fmt(d.total.real)}</div>
-        <div class="kpi-sub">Meta: ${fmt(d.total.meta)}</div>
-      </div>
-      <div class="kpi ${c}">
-        <div class="kpi-label">Avance — ${mesNombre} 2026</div>
-        <div class="kpi-val ${c}">${p}%</div>
-        <div class="kpi-sub">${d.total.real<d.total.meta?'Falta '+fmt(d.total.meta-d.total.real):'Superada +'+fmt(d.total.real-d.total.meta)}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Áreas en meta</div>
-        <div class="kpi-val" style="color:${enMeta===d.areas.length?'#007A6B':'#2C3E35'}">${enMeta}/${d.areas.length}</div>
-        <div class="kpi-sub">activas</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Registros</div>
-        <div class="kpi-val">1</div>
-        <div class="kpi-sub">del período</div>
-      </div>
-    `;
-
-    document.getElementById('last-updated').textContent='Datos de Google Sheets';
-    renderBars('chart-areas', d.areas);
-    renderBars('chart-grupos', d.grupos);
-    renderStatus('status-panel', d.areas);
-    renderProcs('procs-table-wrap', d.procs);
-
+    var d=await fetchSheet(gid);
+    var p=pct(d.total.real,d.total.meta);
+    var c=color(p);
+    var enMeta=d.areas.filter(function(a){return pct(a.real,a.meta)>=100;}).length;
+    var subText=d.total.real<d.total.meta?'Falta '+fmt(d.total.meta-d.total.real):'Superada +'+fmt(d.total.real-d.total.meta);
+    var enMetaColor=enMeta===d.areas.length?'#007A6B':'#2C3E35';
+    document.getElementById('kpi-grid').innerHTML=
+      '<div class="kpi '+c+'"><div class="kpi-label">Total captado</div><div class="kpi-val '+c+'">'+fmt(d.total.real)+'</div><div class="kpi-sub">Meta: '+fmt(d.total.meta)+'</div></div>'
+      +'<div class="kpi '+c+'"><div class="kpi-label">Avance — '+mesNombre+'</div><div class="kpi-val '+c+'">'+p+'%</div><div class="kpi-sub">'+subText+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Áreas en meta</div><div class="kpi-val" style="color:'+enMetaColor+'">'+enMeta+'/'+d.areas.length+'</div><div class="kpi-sub">activas</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Período</div><div class="kpi-val">'+mesNombre+'</div><div class="kpi-sub">2026</div></div>';
+    document.getElementById('last-updated').textContent='Google Sheets';
+    renderBars('chart-areas',d.areas);
+    renderBars('chart-grupos',d.grupos);
+    renderStatus('status-panel',d.areas);
+    renderProcs('procs-table-wrap',d.procs);
   }catch(e){
-    document.getElementById('kpi-grid').innerHTML=`<div class="error-msg" style="grid-column:1/-1">Error al cargar datos: ${e.message}. Verifica que el Sheet esté publicado.</div>`;
+    document.getElementById('kpi-grid').innerHTML='<div class="error-msg" style="grid-column:1/-1">Error: '+e.message+'</div>';
   }
 }
 
-// ── Bimestre ─────────────────────────────────────────────────────────────────
 function renderBimTabs(){
-  const el=document.getElementById('bim-tabs');
+  var el=document.getElementById('bim-tabs');
   el.innerHTML='';
-  BIMESTRES.forEach((b,i)=>{
-    const btn=document.createElement('button');
+  BIMESTRES.forEach(function(b,i){
+    var btn=document.createElement('button');
     btn.className='bim-tab'+(i===currentBim?' active':'');
     btn.textContent=b[0]+' – '+b[1];
-    btn.onclick=()=>{currentBim=i;renderBimestre();};
+    btn.onclick=function(){currentBim=i;renderBimestre();};
     el.appendChild(btn);
   });
 }
 
 async function renderBimestre(){
   renderBimTabs();
-  const [m1,m2]=BIMESTRES[currentBim];
-  const g1=MESES.find(m=>m.nombre===m1)?.gid;
-  const g2=MESES.find(m=>m.nombre===m2)?.gid;
-
-  document.getElementById('bim-kpi-grid').innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando bimestre...</span></div>';
-
+  var pair=BIMESTRES[currentBim];
+  var m1=pair[0],m2=pair[1];
+  var g1=MESES.find(function(m){return m.nombre===m1;});
+  var g2=MESES.find(function(m){return m.nombre===m2;});
+  document.getElementById('bim-kpi-grid').innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando...</span></div>';
   try{
-    const [d1,d2]=await Promise.all([fetchSheet(g1),g2?fetchSheet(g2):Promise.resolve(null)]);
-
-    // Merge data
-    const areas=d1.areas.map((a,i)=>({
-      nombre:a.nombre,
-      meta:(a.meta+(d2?.areas[i]?.meta||0)),
-      real:(a.real+(d2?.areas[i]?.real||0)),
-    }));
-    const grupos=d1.grupos.map((g,i)=>({
-      nombre:g.nombre,
-      meta:(g.meta+(d2?.grupos[i]?.meta||0)),
-      real:(g.real+(d2?.grupos[i]?.real||0)),
-    }));
-    const totalMeta=d1.total.meta+(d2?.total.meta||0);
-    const totalReal=d1.total.real+(d2?.total.real||0);
-    const p=pct(totalReal,totalMeta);
-    const c=color(p);
-    const enMeta=areas.filter(a=>pct(a.real,a.meta)>=100).length;
-    const label=d2?m1+' + '+m2:m1;
-
-    document.getElementById('bim-kpi-grid').innerHTML=`
-      <div class="kpi ${c}">
-        <div class="kpi-label">Total captado</div>
-        <div class="kpi-val ${c}">${fmt(totalReal)}</div>
-        <div class="kpi-sub">Meta: ${fmt(totalMeta)}</div>
-      </div>
-      <div class="kpi ${c}">
-        <div class="kpi-label">Avance — ${label}</div>
-        <div class="kpi-val ${c}">${p}%</div>
-        <div class="kpi-sub">${totalReal<totalMeta?'Falta '+fmt(totalMeta-totalReal):'Superada +'+fmt(totalReal-totalMeta)}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Áreas en meta</div>
-        <div class="kpi-val" style="color:${enMeta===areas.length?'#007A6B':'#2C3E35'}">${enMeta}/${areas.length}</div>
-        <div class="kpi-sub">activas</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Meses incluidos</div>
-        <div class="kpi-val">${d2?2:1}</div>
-        <div class="kpi-sub">${label}</div>
-      </div>
-    `;
-
-    renderBars('bim-chart-areas', areas);
-    renderBars('bim-chart-grupos', grupos);
-    renderStatus('bim-status', areas);
-
+    var results=await Promise.allSettled([
+      g1?fetchSheet(g1.gid):Promise.reject('no data'),
+      g2?fetchSheet(g2.gid):Promise.reject('no data')
+    ]);
+    var d1=results[0].status==='fulfilled'?results[0].value:null;
+    var d2=results[1].status==='fulfilled'?results[1].value:null;
+    if(!d1){document.getElementById('bim-kpi-grid').innerHTML='<div class="error-msg" style="grid-column:1/-1">Sin datos para '+m1+'</div>';return;}
+    var areas=d1.areas.map(function(a,i){return{nombre:a.nombre,meta:a.meta+(d2?d2.areas[i].meta:0),real:a.real+(d2?d2.areas[i].real:0)};});
+    var grupos=d1.grupos.map(function(g,i){return{nombre:g.nombre,meta:g.meta+(d2?d2.grupos[i].meta:0),real:g.real+(d2?d2.grupos[i].real:0)};});
+    var totalMeta=d1.total.meta+(d2?d2.total.meta:0);
+    var totalReal=d1.total.real+(d2?d2.total.real:0);
+    var p=pct(totalReal,totalMeta);
+    var c=color(p);
+    var enMeta=areas.filter(function(a){return pct(a.real,a.meta)>=100;}).length;
+    var label=d2?m1+' + '+m2:m1;
+    var bimSubText=totalReal<totalMeta?'Falta '+fmt(totalMeta-totalReal):'Superada +'+fmt(totalReal-totalMeta);
+    var bimEnMetaColor=enMeta===areas.length?'#007A6B':'#2C3E35';
+    document.getElementById('bim-kpi-grid').innerHTML=
+      '<div class="kpi '+c+'"><div class="kpi-label">Total captado</div><div class="kpi-val '+c+'">'+fmt(totalReal)+'</div><div class="kpi-sub">Meta: '+fmt(totalMeta)+'</div></div>'
+      +'<div class="kpi '+c+'"><div class="kpi-label">Avance bimestral</div><div class="kpi-val '+c+'">'+p+'%</div><div class="kpi-sub">'+bimSubText+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Áreas en meta</div><div class="kpi-val" style="color:'+bimEnMetaColor+'">'+enMeta+'/'+areas.length+'</div><div class="kpi-sub">activas</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Bimestre</div><div class="kpi-val" style="font-size:14px">'+label+'</div><div class="kpi-sub">2026</div></div>';
+    renderBars('bim-chart-areas',areas);
+    renderBars('bim-chart-grupos',grupos);
+    renderStatus('bim-status',areas);
   }catch(e){
-    document.getElementById('bim-kpi-grid').innerHTML=`<div class="error-msg" style="grid-column:1/-1">Error: ${e.message}</div>`;
+    document.getElementById('bim-kpi-grid').innerHTML='<div class="error-msg" style="grid-column:1/-1">Error: '+e.message+'</div>';
   }
 }
 
-// ── Comparativo ──────────────────────────────────────────────────────────────
 async function renderComparativo(){
-  const el=document.getElementById('comp-chart');
-  el.innerHTML='<div class="loading"><div class="spinner"></div><span>Cargando todos los meses...</span></div>';
-
+  var el=document.getElementById('comp-chart');
+  el.innerHTML='<div class="loading"><div class="spinner"></div><span>Cargando...</span></div>';
   try{
-    const results=await Promise.allSettled(MESES.slice(0,6).map(m=>fetchSheet(m.gid)));
-    const datos=results.map((r,i)=>({
-      mes:MESES[i].nombre,
-      real:r.status==='fulfilled'?r.value.total.real:null,
-      meta:r.status==='fulfilled'?r.value.total.meta:null,
-    }));
-
-    const maxVal=Math.max(...datos.filter(d=>d.real).map(d=>d.real));
-
-    el.innerHTML='<div style="display:flex;align-items:flex-end;gap:12px;height:160px;padding:10px 0">'
-      +datos.map(d=>{
-        if(!d.real) return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="flex:1"></div><div style="font-size:10px;color:var(--muted)">${d.mes.slice(0,3)}</div></div>`;
-        const h=Math.round(d.real/maxVal*130);
-        const p=pct(d.real,d.meta);
-        const c=bc(p);
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px" title="${d.mes}: ${fmt(d.real)} (${p}%)">
-          <div style="font-size:9.5px;font-weight:600;color:${c}">${p}%</div>
-          <div style="flex:1;display:flex;align-items:flex-end;width:100%">
-            <div style="width:100%;height:${h}px;background:${c};border-radius:4px 4px 0 0;opacity:.85;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"></div>
-          </div>
-          <div style="font-size:10px;color:var(--muted)">${d.mes.slice(0,3)}</div>
-          <div style="font-size:9.5px;font-weight:600">${fmt(d.real).replace('$','$')}</div>
-        </div>`;
-      }).join('')+'</div>';
-
+    var promises=MESES.slice(0,6).map(function(m){return fetchSheet(m.gid);});
+    var results=await Promise.allSettled(promises);
+    var datos=results.map(function(r,i){return{mes:MESES[i].nombre,real:r.status==='fulfilled'?r.value.total.real:null,meta:r.status==='fulfilled'?r.value.total.meta:null};});
+    var maxVal=Math.max.apply(null,datos.filter(function(d){return d.real;}).map(function(d){return d.real;}));
+    var bars='';
+    datos.forEach(function(d){
+      if(!d.real){bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="flex:1"></div><div style="font-size:10px;color:#7A9990">'+d.mes.slice(0,3)+'</div></div>';return;}
+      var h=Math.round(d.real/maxVal*130);
+      var p=pct(d.real,d.meta);
+      var barColor=bc(p);
+      bars+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'
+        +'<div style="font-size:9.5px;font-weight:600;color:'+barColor+'">'+p+'%</div>'
+        +'<div style="flex:1;display:flex;align-items:flex-end;width:100%">'
+        +'<div style="width:100%;height:'+h+'px;background:'+barColor+';border-radius:4px 4px 0 0;opacity:.85"></div>'
+        +'</div>'
+        +'<div style="font-size:10px;color:#7A9990">'+d.mes.slice(0,3)+'</div>'
+        +'<div style="font-size:9.5px;font-weight:600">'+fmt(d.real)+'</div>'
+        +'</div>';
+    });
+    el.innerHTML='<div style="display:flex;align-items:flex-end;gap:12px;height:180px;padding:10px 0">'+bars+'</div>';
   }catch(e){
-    el.innerHTML=`<div class="error-msg">Error: ${e.message}</div>`;
+    el.innerHTML='<div class="error-msg">Error: '+e.message+'</div>';
   }
 }
 
-// ── PDF export ───────────────────────────────────────────────────────────────
-function exportPDF(){
-  window.print();
-}
+function exportPDF(){window.print();}
 
-// ── Init ─────────────────────────────────────────────────────────────────────
 loadMonth();
 </script>
 </body>
