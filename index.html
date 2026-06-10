@@ -84,6 +84,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--text);f
 .badge.amber{background:var(--gold-light);color:var(--gold)}
 .badge.red{background:var(--red-light);color:var(--red)}
 
+.red-text{color:var(--red)}.green-text{color:var(--teal-dark)}
 /* Loading */
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--muted);gap:12px}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
@@ -98,6 +99,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--text);f
 .btn-export{padding:8px 16px;background:var(--teal);color:white;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
 .btn-export:hover{background:var(--teal-dark)}
 
+.red-text{color:var(--red)}.green-text{color:var(--teal-dark)}
 /* Error */
 .error-msg{background:var(--red-light);color:var(--red);padding:12px 16px;border-radius:8px;font-size:12.5px}
 
@@ -334,7 +336,7 @@ function parseSheet(rows){
 
 async function fetchSheet(gid){
   if(cache[gid]) return cache[gid];
-  const url='https://corsproxy.io/?'+encodeURIComponent(SHEET_BASE+gid);
+  const url='https://api.allorigins.win/raw?url='+encodeURIComponent(SHEET_BASE+gid);
   const r=await fetch(url);
   if(!r.ok) throw new Error('HTTP '+r.status);
   const text=await r.text();
@@ -411,8 +413,8 @@ function renderProcs(containerId, procs){
   const rows=procs.map(p=>{
     const done=p.faltantes<=0;
     return `<tr>
-      <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:${done?'var(--teal)':'var(--muted)'};display:inline-block"></span>${p.nombre}</span></td>
-      <td style="text-align:right;color:${p.restante>0?'var(--red)':'var(--teal-dark)';}">${fmt(p.restante)}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:${done?'#00A08C':'#7A9990'};display:inline-block"></span>${p.nombre}</span></td>
+      <td style="text-align:right" class="${p.restante>0?'red-text':'green-text'}">${fmt(p.restante)}</td>
       <td style="text-align:right;color:var(--muted)">${fmt(p.ticket)}</td>
       <td style="text-align:right">
         ${done?'<span class="badge green">✓ En meta</span>':`<span class="badge red">${p.faltantes} proc.</span>`}
@@ -462,7 +464,7 @@ async function loadMonth(){
       </div>
       <div class="kpi">
         <div class="kpi-label">Áreas en meta</div>
-        <div class="kpi-val" style="color:${enMeta===d.areas.length?'var(--teal-dark)':'var(--text)'}">${enMeta}/${d.areas.length}</div>
+        <div class="kpi-val" style="color:${enMeta===d.areas.length?'#007A6B':'#2C3E35'}">${enMeta}/${d.areas.length}</div>
         <div class="kpi-sub">activas</div>
       </div>
       <div class="kpi">
@@ -538,7 +540,7 @@ async function renderBimestre(){
       </div>
       <div class="kpi">
         <div class="kpi-label">Áreas en meta</div>
-        <div class="kpi-val" style="color:${enMeta===areas.length?'var(--teal-dark)':'var(--text)'}">${enMeta}/${areas.length}</div>
+        <div class="kpi-val" style="color:${enMeta===areas.length?'#007A6B':'#2C3E35'}">${enMeta}/${areas.length}</div>
         <div class="kpi-sub">activas</div>
       </div>
       <div class="kpi">
