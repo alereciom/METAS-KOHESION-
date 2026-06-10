@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kohesión Dental — Metas 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00A08C;--teal-dark:#007A6B;--teal-light:#E6F4F2;
+  --gold:#C89000;--gold-light:#FFF8E1;
+  --red:#D63C3C;--red-light:#FDEAEA;
+  --gray:#F7F9F8;--border:#D8E8E5;--text:#2C3E35;--muted:#7A9990;
+  --r:10px;--shadow:0 2px 12px rgba(0,0,0,.06);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--gray);color:var(--text);font-size:13.5px}
+
+/* Layout */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#1A2E2A;color:white;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.main{flex:1;padding:24px;overflow-x:hidden}
+
+/* Sidebar */
+.sb-brand{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand h1{font-size:15px;font-weight:700;color:white;letter-spacing:.02em}
+.sb-brand p{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:2px}
+.sb-section{padding:12px 16px 4px;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;border-radius:0;transition:background .15s;font-size:12.5px;color:rgba(255,255,255,.7);border-left:3px solid transparent}
+.sb-item:hover{background:rgba(255,255,255,.07);color:white}
+.sb-item.active{background:rgba(0,160,140,.2);color:white;border-left-color:var(--teal)}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Period selector */
+.period-bar{background:white;border-radius:var(--r);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);flex-wrap:wrap}
+.period-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--muted)}
+.period-btn.active{background:var(--teal);border-color:var(--teal);color:white}
+.period-select{padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:white;color:var(--text);cursor:pointer}
+.period-label{font-size:11px;color:var(--muted);margin-left:auto}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:white;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);border-top:3px solid var(--border)}
+.kpi.green{border-top-color:var(--teal)}
+.kpi.amber{border-top-color:var(--gold)}
+.kpi.red{border-top-color:var(--red)}
+.kpi-label{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:700;line-height:1}
+.kpi-val.green{color:var(--teal-dark)}
+.kpi-val.amber{color:var(--gold)}
+.kpi-val.red{color:var(--red)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* Cards */
+.card{background:white;border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:16px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Bar chart */
+.bar-row{display:flex;align-items:center;gap:10px;padding:4px 0;cursor:pointer}
+.bar-row:hover .bar-name{color:var(--teal-dark)}
+.bar-name{width:140px;font-size:12px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.bar-track{flex:1;height:7px;background:#EDF2F0;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.bar-pct{width:38px;text-align:right;font-size:11.5px;font-weight:600;flex-shrink:0}
+.bar-detail{display:none;padding:3px 0 8px 150px;font-size:11px;color:var(--muted);line-height:1.6}
+.bar-detail.open{display:block}
+
+/* Status lists */
+.status-section{margin-bottom:10px}
+.status-title{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.status-title.green{color:var(--teal-dark)}
+.status-title.amber{color:var(--gold)}
+.status-title.red{color:var(--red)}
+.status-item{font-size:12px;color:var(--text);padding:1.5px 0;display:flex;align-items:center;gap:5px}
+
+/* Procs table */
+.procs-table{width:100%;border-collapse:collapse}
+.procs-table th{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 8px;text-align:left;border-bottom:1.5px solid var(--border)}
+.procs-table td{padding:6px 8px;font-size:12px;border-bottom:1px solid #F0F4F2}
+.procs-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
+.badge.green{background:var(--teal-light);color:var(--teal-dark)}
+.badge.amber{background:var(--gold-light);color:var(--gold)}
+.badge.red{background:var(--red-light);color:var(--red)}
+
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--muted);gap:12px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Bimestre tabs */
+.bim-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.bim-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s}
+.bim-tab.active{background:var(--teal);border-color:var(--teal);color:white}
+
+/* Export button */
+.btn-export{padding:8px 16px;background:var(--teal);color:white;border:none;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-export:hover{background:var(--teal-dark)}
+
+/* Error */
+.error-msg{background:var(--red-light);color:var(--red);padding:12px 16px;border-radius:8px;font-size:12.5px}
+
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .card-grid{grid-template-columns:1fr}
+  .sidebar{display:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <h1>Kohesión Dental</h1>
+    <p>Dashboard de Metas 2026</p>
+  </div>
+  <div class="sb-section">Vistas</div>
+  <div class="sb-item active" onclick="showView('resumen',this)">
+    <span class="sb-dot" style="background:var(--teal)"></span> Resumen mensual
+  </div>
+  <div class="sb-item" onclick="showView('bimestre',this)">
+    <span class="sb-dot" style="background:var(--gold)"></span> Bimestral
+  </div>
+  <div class="sb-item" onclick="showView('comparativo',this)">
+    <span class="sb-dot" style="background:#8B6FBF"></span> Comparativo anual
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- VIEW: RESUMEN -->
+  <div id="view-resumen">
+    <div style="margin-bottom:18px">
+      <h2 style="font-size:22px;font-weight:700">Resumen de avance</h2>
+      <p id="periodo-label" style="font-size:12px;color:var(--muted);margin-top:3px"></p>
+    </div>
+
+    <!-- Period selector -->
+    <div class="period-bar">
+      <span style="font-size:11px;font-weight:600;color:var(--muted)">Mes:</span>
+      <select class="period-select" id="mes-select" onchange="loadMonth()">
+        <option value="160595116">Enero</option>
+        <option value="1376352959">Febrero</option>
+        <option value="71200325">Marzo</option>
+        <option value="794215396">Abril</option>
+        <option value="1194201743" selected>Mayo</option>
+        <option value="2111051324">Junio</option>
+        <option value="1386326567">Julio</option>
+        <option value="1518055373">Agosto</option>
+        <option value="1399547941">Septiembre</option>
+        <option value="1185373029">Octubre</option>
+        <option value="120543123">Noviembre</option>
+        <option value="177414756">Diciembre</option>
+      </select>
+      <span class="period-label" id="last-updated"></span>
+      <button class="btn-export" onclick="exportPDF()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Exportar PDF
+      </button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando datos...</span></div>
+    </div>
+
+    <!-- Charts + Status -->
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Avance por área <span>% de meta</span></div>
+        <div id="chart-areas"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Estado del período</div>
+        <div id="status-panel"></div>
+      </div>
+    </div>
+
+    <!-- Grupos clínicos -->
+    <div class="card">
+      <div class="card-title">Avance por área clínica <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">agrupado por especialidad</span></div>
+      <div id="chart-grupos"></div>
+    </div>
+
+    <!-- Procedimientos -->
+    <div class="card">
+      <div class="card-title">Procedimientos restantes — base mensual</div>
+      <div id="procs-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: BIMESTRE -->
+  <div id="view-bimestre" style="display:none">
+    <div style="margin-bottom:18px">
+      <h2 style="font-size:22px;font-weight:700">Avance bimestral</h2>
+      <p style="font-size:12px;color:var(--muted);margin-top:3px">Suma de dos meses consecutivos vs meta bimestral</p>
+    </div>
+    <div class="bim-tabs" id="bim-tabs"></div>
+    <div class="kpi-grid" id="bim-kpi-grid"></div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Avance por área <span>% de meta bimestral</span></div>
+        <div id="bim-chart-areas"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Estado del bimestre</div>
+        <div id="bim-status"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Avance por área clínica</div>
+      <div id="bim-chart-grupos"></div>
+    </div>
+  </div>
+
+  <!-- VIEW: COMPARATIVO -->
+  <div id="view-comparativo" style="display:none">
+    <div style="margin-bottom:18px">
+      <h2 style="font-size:22px;font-weight:700">Comparativo anual 2026</h2>
+      <p style="font-size:12px;color:var(--muted);margin-top:3px">Evolución mensual del total captado</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Total captado por mes</div>
+      <div id="comp-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Detalle por área — todos los meses</div>
+      <div id="comp-table" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSI3PaTGpDP64lOqTUHGuVYxhQPUdgj94QjPclyKcRUknzIWbPnN4TsjRnwsFmnUmrG0YbRam63VKI8/pub?output=csv&gid=';
+
+const MESES = [
+  {nombre:'Enero',   gid:'160595116'},
+  {nombre:'Febrero', gid:'1376352959'},
+  {nombre:'Marzo',   gid:'71200325'},
+  {nombre:'Abril',   gid:'794215396'},
+  {nombre:'Mayo',    gid:'1194201743'},
+  {nombre:'Junio',   gid:'2111051324'},
+  {nombre:'Julio',   gid:'1386326567'},
+  {nombre:'Agosto',  gid:'1518055373'},
+  {nombre:'Septiembre',gid:'1399547941'},
+  {nombre:'Octubre', gid:'1185373029'},
+  {nombre:'Noviembre',gid:'120543123'},
+  {nombre:'Diciembre',gid:'177414756'},
+];
+
+const BIMESTRES = [
+  ['Enero','Febrero'],['Marzo','Abril'],['Mayo','Junio'],
+  ['Julio','Agosto'],['Septiembre','Octubre'],['Noviembre','Diciembre']
+];
+
+const cache = {};
+let currentBim = 0;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmt(n){
+  if(isNaN(n)||n===null) return '—';
+  return '$'+Math.round(n).toLocaleString('es-MX');
+}
+function pct(real,meta){return meta>0?Math.round(real/meta*100):0;}
+function color(p){return p>=100?'green':p>=75?'amber':'red';}
+function bc(p){return p>=100?'#00A08C':p>=75?'#C89000':'#D63C3C';}
+
+function parseMoney(s){
+  if(!s) return 0;
+  return parseFloat(s.replace(/[$,\s]/g,'').replace('%',''))||0;
+}
+
+// ── CSV Parser ───────────────────────────────────────────────────────────────
+function parseCSV(text){
+  const rows=[];
+  const lines=text.split('\n');
+  for(const line of lines){
+    const cols=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+      else{cur+=c;}
+    }
+    cols.push(cur.trim());
+    rows.push(cols);
+  }
+  return rows;
+}
+
+function parseSheet(rows){
+  const areas=[];
+  for(let i=4;i<25;i++){
+    const r=rows[i];
+    if(!r||!r[1]||r[1]==='TOTALES') continue;
+    areas.push({
+      nombre:r[1].trim(),
+      meta:parseMoney(r[2]),
+      real:parseMoney(r[3]),
+    });
+  }
+  const grupos=[];
+  for(let i=4;i<17;i++){
+    const r=rows[i];
+    if(!r||!r[7]) continue;
+    grupos.push({
+      nombre:r[7].trim(),
+      meta:parseMoney(r[8]),
+      real:parseMoney(r[9]),
+    });
+  }
+  const procs=[];
+  for(let i=27;i<47;i++){
+    const r=rows[i];
+    if(!r||!r[11]) continue;
+    procs.push({
+      nombre:r[11].trim(),
+      restante:parseMoney(r[12]),
+      ticket:parseMoney(r[13]),
+      faltantes:Math.max(0,parseInt(r[14])||0),
+    });
+  }
+  // Total
+  const totR=rows[25]||[];
+  const total={meta:parseMoney(totR[2]),real:parseMoney(totR[3])};
+  return{areas,grupos,procs,total};
+}
+
+async function fetchSheet(gid){
+  if(cache[gid]) return cache[gid];
+  const url=SHEET_BASE+gid;
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const text=await r.text();
+  const rows=parseCSV(text);
+  const data=parseSheet(rows);
+  cache[gid]=data;
+  return data;
+}
+
+// ── Views ────────────────────────────────────────────────────────────────────
+function showView(v,el){
+  document.querySelectorAll('[id^="view-"]').forEach(x=>x.style.display='none');
+  document.getElementById('view-'+v).style.display='block';
+  document.querySelectorAll('.sb-item').forEach(x=>x.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(v==='bimestre') renderBimestre();
+  if(v==='comparativo') renderComparativo();
+}
+
+// ── Bar chart ────────────────────────────────────────────────────────────────
+function renderBars(containerId, items){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML='';
+  items.forEach(item=>{
+    const p=pct(item.real,item.meta);
+    const c=color(p);
+    const restante=item.meta-item.real;
+    const div=document.createElement('div');
+    div.innerHTML=`
+      <div class="bar-row" onclick="this.nextElementSibling.classList.toggle('open')">
+        <div class="bar-name">
+          <span style="width:7px;height:7px;border-radius:50%;background:${bc(p)};flex-shrink:0;display:inline-block"></span>
+          ${item.nombre}
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(p,100)}%;background:${bc(p)}"></div></div>
+        <div class="bar-pct" style="color:${bc(p)}">${p}%</div>
+      </div>
+      <div class="bar-detail">
+        <strong style="color:${bc(p)}">${fmt(item.real)}</strong>
+        <span> captado &nbsp;·&nbsp; meta ${fmt(item.meta)} &nbsp;·&nbsp; </span>
+        ${restante>0?`<span style="color:var(--red)">falta ${fmt(restante)}</span>`:`<span style="color:var(--teal-dark)">✓ meta superada</span>`}
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function renderStatus(containerId, areas){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const verde=areas.filter(a=>pct(a.real,a.meta)>=100);
+  const ambar=areas.filter(a=>{const p=pct(a.real,a.meta);return p>=75&&p<100;});
+  const rojo=areas.filter(a=>pct(a.real,a.meta)<75);
+  el.innerHTML=`
+    <div class="status-section">
+      <div class="status-title green">En o sobre meta (${verde.length})</div>
+      ${verde.length?verde.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
+    </div>
+    <div class="status-section">
+      <div class="status-title amber">Cerca 75-99% (${ambar.length})</div>
+      ${ambar.length?ambar.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
+    </div>
+    <div class="status-section">
+      <div class="status-title red">Necesitan atención (${rojo.length})</div>
+      ${rojo.length?rojo.map(a=>`<div class="status-item"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></span>${a.nombre}</div>`).join(''):'<div style="color:var(--muted);font-size:12px">—</div>'}
+    </div>
+  `;
+}
+
+function renderProcs(containerId, procs){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const rows=procs.map(p=>{
+    const done=p.faltantes<=0;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:50%;background:${done?'var(--teal)':'var(--muted)'};display:inline-block"></span>${p.nombre}</span></td>
+      <td style="text-align:right;color:${p.restante>0?'var(--red)':'var(--teal-dark)';}">${fmt(p.restante)}</td>
+      <td style="text-align:right;color:var(--muted)">${fmt(p.ticket)}</td>
+      <td style="text-align:right">
+        ${done?'<span class="badge green">✓ En meta</span>':`<span class="badge red">${p.faltantes} proc.</span>`}
+      </td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<table class="procs-table">
+    <thead><tr>
+      <th>Área</th><th style="text-align:right">Restante</th>
+      <th style="text-align:right">Ticket prom.</th>
+      <th style="text-align:right">Procedimientos</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── Load month ───────────────────────────────────────────────────────────────
+async function loadMonth(){
+  const sel=document.getElementById('mes-select');
+  const gid=sel.value;
+  const mesNombre=sel.options[sel.selectedIndex].text;
+
+  document.getElementById('kpi-grid').innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando '+mesNombre+'...</span></div>';
+  document.getElementById('chart-areas').innerHTML='';
+  document.getElementById('chart-grupos').innerHTML='';
+  document.getElementById('status-panel').innerHTML='';
+  document.getElementById('procs-table-wrap').innerHTML='';
+
+  document.getElementById('periodo-label').textContent='Período: '+mesNombre+' 2026 — '+new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  try{
+    const d=await fetchSheet(gid);
+    const p=pct(d.total.real,d.total.meta);
+    const c=color(p);
+    const enMeta=d.areas.filter(a=>pct(a.real,a.meta)>=100).length;
+
+    document.getElementById('kpi-grid').innerHTML=`
+      <div class="kpi ${c}">
+        <div class="kpi-label">Total captado</div>
+        <div class="kpi-val ${c}">${fmt(d.total.real)}</div>
+        <div class="kpi-sub">Meta: ${fmt(d.total.meta)}</div>
+      </div>
+      <div class="kpi ${c}">
+        <div class="kpi-label">Avance — ${mesNombre} 2026</div>
+        <div class="kpi-val ${c}">${p}%</div>
+        <div class="kpi-sub">${d.total.real<d.total.meta?'Falta '+fmt(d.total.meta-d.total.real):'Superada +'+fmt(d.total.real-d.total.meta)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Áreas en meta</div>
+        <div class="kpi-val" style="color:${enMeta===d.areas.length?'var(--teal-dark)':'var(--text)'}">${enMeta}/${d.areas.length}</div>
+        <div class="kpi-sub">activas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Registros</div>
+        <div class="kpi-val">1</div>
+        <div class="kpi-sub">del período</div>
+      </div>
+    `;
+
+    document.getElementById('last-updated').textContent='Datos de Google Sheets';
+    renderBars('chart-areas', d.areas);
+    renderBars('chart-grupos', d.grupos);
+    renderStatus('status-panel', d.areas);
+    renderProcs('procs-table-wrap', d.procs);
+
+  }catch(e){
+    document.getElementById('kpi-grid').innerHTML=`<div class="error-msg" style="grid-column:1/-1">Error al cargar datos: ${e.message}. Verifica que el Sheet esté publicado.</div>`;
+  }
+}
+
+// ── Bimestre ─────────────────────────────────────────────────────────────────
+function renderBimTabs(){
+  const el=document.getElementById('bim-tabs');
+  el.innerHTML='';
+  BIMESTRES.forEach((b,i)=>{
+    const btn=document.createElement('button');
+    btn.className='bim-tab'+(i===currentBim?' active':'');
+    btn.textContent=b[0]+' – '+b[1];
+    btn.onclick=()=>{currentBim=i;renderBimestre();};
+    el.appendChild(btn);
+  });
+}
+
+async function renderBimestre(){
+  renderBimTabs();
+  const [m1,m2]=BIMESTRES[currentBim];
+  const g1=MESES.find(m=>m.nombre===m1)?.gid;
+  const g2=MESES.find(m=>m.nombre===m2)?.gid;
+
+  document.getElementById('bim-kpi-grid').innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div><span>Cargando bimestre...</span></div>';
+
+  try{
+    const [d1,d2]=await Promise.all([fetchSheet(g1),g2?fetchSheet(g2):Promise.resolve(null)]);
+
+    // Merge data
+    const areas=d1.areas.map((a,i)=>({
+      nombre:a.nombre,
+      meta:(a.meta+(d2?.areas[i]?.meta||0)),
+      real:(a.real+(d2?.areas[i]?.real||0)),
+    }));
+    const grupos=d1.grupos.map((g,i)=>({
+      nombre:g.nombre,
+      meta:(g.meta+(d2?.grupos[i]?.meta||0)),
+      real:(g.real+(d2?.grupos[i]?.real||0)),
+    }));
+    const totalMeta=d1.total.meta+(d2?.total.meta||0);
+    const totalReal=d1.total.real+(d2?.total.real||0);
+    const p=pct(totalReal,totalMeta);
+    const c=color(p);
+    const enMeta=areas.filter(a=>pct(a.real,a.meta)>=100).length;
+    const label=d2?m1+' + '+m2:m1;
+
+    document.getElementById('bim-kpi-grid').innerHTML=`
+      <div class="kpi ${c}">
+        <div class="kpi-label">Total captado</div>
+        <div class="kpi-val ${c}">${fmt(totalReal)}</div>
+        <div class="kpi-sub">Meta: ${fmt(totalMeta)}</div>
+      </div>
+      <div class="kpi ${c}">
+        <div class="kpi-label">Avance — ${label}</div>
+        <div class="kpi-val ${c}">${p}%</div>
+        <div class="kpi-sub">${totalReal<totalMeta?'Falta '+fmt(totalMeta-totalReal):'Superada +'+fmt(totalReal-totalMeta)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Áreas en meta</div>
+        <div class="kpi-val" style="color:${enMeta===areas.length?'var(--teal-dark)':'var(--text)'}">${enMeta}/${areas.length}</div>
+        <div class="kpi-sub">activas</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meses incluidos</div>
+        <div class="kpi-val">${d2?2:1}</div>
+        <div class="kpi-sub">${label}</div>
+      </div>
+    `;
+
+    renderBars('bim-chart-areas', areas);
+    renderBars('bim-chart-grupos', grupos);
+    renderStatus('bim-status', areas);
+
+  }catch(e){
+    document.getElementById('bim-kpi-grid').innerHTML=`<div class="error-msg" style="grid-column:1/-1">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Comparativo ──────────────────────────────────────────────────────────────
+async function renderComparativo(){
+  const el=document.getElementById('comp-chart');
+  el.innerHTML='<div class="loading"><div class="spinner"></div><span>Cargando todos los meses...</span></div>';
+
+  try{
+    const results=await Promise.allSettled(MESES.slice(0,6).map(m=>fetchSheet(m.gid)));
+    const datos=results.map((r,i)=>({
+      mes:MESES[i].nombre,
+      real:r.status==='fulfilled'?r.value.total.real:null,
+      meta:r.status==='fulfilled'?r.value.total.meta:null,
+    }));
+
+    const maxVal=Math.max(...datos.filter(d=>d.real).map(d=>d.real));
+
+    el.innerHTML='<div style="display:flex;align-items:flex-end;gap:12px;height:160px;padding:10px 0">'
+      +datos.map(d=>{
+        if(!d.real) return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="flex:1"></div><div style="font-size:10px;color:var(--muted)">${d.mes.slice(0,3)}</div></div>`;
+        const h=Math.round(d.real/maxVal*130);
+        const p=pct(d.real,d.meta);
+        const c=bc(p);
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px" title="${d.mes}: ${fmt(d.real)} (${p}%)">
+          <div style="font-size:9.5px;font-weight:600;color:${c}">${p}%</div>
+          <div style="flex:1;display:flex;align-items:flex-end;width:100%">
+            <div style="width:100%;height:${h}px;background:${c};border-radius:4px 4px 0 0;opacity:.85;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted)">${d.mes.slice(0,3)}</div>
+          <div style="font-size:9.5px;font-weight:600">${fmt(d.real).replace('$','$')}</div>
+        </div>`;
+      }).join('')+'</div>';
+
+  }catch(e){
+    el.innerHTML=`<div class="error-msg">Error: ${e.message}</div>`;
+  }
+}
+
+// ── PDF export ───────────────────────────────────────────────────────────────
+function exportPDF(){
+  window.print();
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadMonth();
+</script>
+</body>
+</html>
