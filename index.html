@@ -303,7 +303,7 @@ function parseSheet(rows){
 async function fetchSheet(gid){
   if(cache[gid]) return cache[gid];
   var url=SCRIPT_URL+'?gid='+gid;
-  var r=await fetch(url);
+  var r=await fetch(url,{redirect:'follow',mode:'cors'});
   if(!r.ok) throw new Error('HTTP '+r.status);
   var rows=await r.json();
   var data=parseSheet(rows);
@@ -328,19 +328,22 @@ function renderBars(containerId,items){
     var p=pct(item.real,item.meta);
     var barColor=bc(p);
     var restante=item.meta-item.real;
-    var restText=restante>0?'falta <span style="color:#D63C3C">'+fmt(restante)+'</span>':'<span style="color:#007A6B">✓ meta superada</span>';
-    var div=document.createElement('div');
-    div.innerHTML=
-      '<div class="bar-row" onclick="this.nextElementSibling.classList.toggle('open')">'
-      +'<div class="bar-name"><span style="width:7px;height:7px;border-radius:50%;background:'+barColor+';flex-shrink:0;display:inline-block"></span>'+item.nombre+'</div>'
+    var restText=restante>0?'falta '+fmt(restante):'meta superada';
+    var wrapper=document.createElement('div');
+    var rowDiv=document.createElement('div');
+    rowDiv.className='bar-row';
+    rowDiv.style.cursor='pointer';
+    rowDiv.innerHTML='<div class="bar-name"><span style="width:7px;height:7px;border-radius:50%;background:'+barColor+';flex-shrink:0;display:inline-block"></span>'+item.nombre+'</div>'
       +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.min(p,100)+'%;background:'+barColor+'"></div></div>'
-      +'<div class="bar-pct" style="color:'+barColor+'">'+p+'%</div>'
-      +'</div>'
-      +'<div class="bar-detail">'
-      +'<strong style="color:'+barColor+'">'+fmt(item.real)+'</strong>'
-      +' captado &nbsp;·&nbsp; meta '+fmt(item.meta)+' &nbsp;·&nbsp; '+restText
-      +'</div>';
-    el.appendChild(div);
+      +'<div class="bar-pct" style="color:'+barColor+'">'+p+'%</div>';
+    var detailDiv=document.createElement('div');
+    detailDiv.className='bar-detail';
+    detailDiv.style.display='none';
+    detailDiv.innerHTML='<strong style="color:'+barColor+'">'+fmt(item.real)+'</strong> captado | meta '+fmt(item.meta)+' | '+restText;
+    rowDiv.addEventListener('click',function(){detailDiv.style.display=detailDiv.style.display==='none'?'block':'none';});
+    wrapper.appendChild(rowDiv);
+    wrapper.appendChild(detailDiv);
+    el.appendChild(wrapper);
   });
 }
 
